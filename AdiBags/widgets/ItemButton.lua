@@ -1,6 +1,6 @@
 --[[
 AdiBags - Adirelle's bag addon.
-Copyright 2010-2014 Adirelle (adirelle@gmail.com)
+Copyright 2010-2021 Adirelle (adirelle@gmail.com)
 All rights reserved.
 
 This file is part of AdiBags.
@@ -19,7 +19,7 @@ You should have received a copy of the GNU General Public License
 along with AdiBags.  If not, see <http://www.gnu.org/licenses/>.
 --]]
 
-local _, addon = ...
+local addonName, addon = ...
 
 --<GLOBALS
 local _G = _G
@@ -38,13 +38,23 @@ local GetContainerItemLink = _G.GetContainerItemLink
 local GetContainerItemQuestInfo = _G.GetContainerItemQuestInfo
 local GetContainerNumFreeSlots = _G.GetContainerNumFreeSlots
 local GetItemInfo = _G.GetItemInfo
+local GetItemQualityColor = _G.GetItemQualityColor
 local hooksecurefunc = _G.hooksecurefunc
 local IsBattlePayItem = _G.IsBattlePayItem
 local IsCorruptedItem = _G.IsCorruptedItem
 local IsCosmeticItem = _G.IsCosmeticItem
 local IsInventoryItemLocked = _G.IsInventoryItemLocked
-local ITEM_QUALITY_COMMON = _G.Enum.ItemQuality.Common
-local ITEM_QUALITY_POOR = _G.Enum.ItemQuality.Poor
+local ITEM_QUALITY_COMMON
+local ITEM_QUALITY_POOR
+
+if addon.isRetail then
+	ITEM_QUALITY_COMMON = _G.Enum.ItemQuality.Common
+	ITEM_QUALITY_POOR = _G.Enum.ItemQuality.Poor
+else
+	ITEM_QUALITY_COMMON = _G.LE_ITEM_QUALITY_COMMON
+	ITEM_QUALITY_POOR = _G.LE_ITEM_QUALITY_POOR
+end
+
 local next = _G.next
 local pairs = _G.pairs
 local REAGENTBANK_CONTAINER = _G.REAGENTBANK_CONTAINER
@@ -53,7 +63,6 @@ local select = _G.select
 local SetItemButtonDesaturated = _G.SetItemButtonDesaturated
 local SplitContainerItem = _G.SplitContainerItem
 local StackSplitFrame = _G.StackSplitFrame
-local TEXTURE_ITEM_QUEST_BANG = _G.TEXTURE_ITEM_QUEST_BANG
 local tostring = _G.tostring
 local unpack = _G.unpack
 local wipe = _G.wipe
@@ -68,13 +77,18 @@ local ITEM_SIZE = addon.ITEM_SIZE
 -- Button initialization
 --------------------------------------------------------------------------------
 
-local buttonClass, buttonProto = addon:NewClass("ItemButton", "ItemButton", "ContainerFrameItemButtonTemplate", "ABEvent-1.0")
+local buttonClass, buttonProto
+if addon.isRetail then
+	buttonClass, buttonProto = addon:NewClass("ItemButton", "ItemButton", "ContainerFrameItemButtonTemplate", "ABEvent-1.0")
+else
+	buttonClass, buttonProto = addon:NewClass("ItemButton", "Button", "ContainerFrameItemButtonTemplate", "ABEvent-1.0")
+end
 
 local childrenNames = { "Cooldown", "IconTexture", "IconQuestTexture", "Count", "Stock", "NormalTexture", "NewItemTexture" }
 
 function buttonProto:OnCreate()
 	local name = self:GetName()
-	for _, childName in pairs(childrenNames) do
+	for i, childName in pairs(childrenNames ) do
 		if not self[childName] then
 			self[childName] = _G[name..childName]
 		end
@@ -96,15 +110,7 @@ function buttonProto:OnCreate()
 		self:SetTemplate("Transparent")
 		self:StyleButton(1)
 	end
-	self:SetNormalTexture(nil)
-	if not self.ScrapIcon then
-		local scrapIcon = self:CreateTexture(nil, "OVERLAY")
-		scrapIcon:SetAtlas("bags-icon-scrappable")
-		scrapIcon:Size(14, 12)
-		scrapIcon:SetPoint("TOPRIGHT", -2, -2)
-		scrapIcon:Hide()
-		self.ScrapIcon = scrapIcon
-	end
+	self:ClearNormalTexture()
 	if not self.QuestIcon then
 		local questIcon = self:CreateFontString(nil, "OVERLAY")
 		questIcon:SetPoint("LEFT", 3, 0)
@@ -129,6 +135,8 @@ function buttonProto:OnAcquire(container, bag, slot)
 	self.slot = slot
 	self.stack = nil
 	self:SetParent(addon.itemParentFrames[bag])
+	--TODO(lobato): Add this when (if?) Blizzard fixes taint for bags
+	--self:SetBagID(bag)
 	self:SetID(slot)
 	self:FullUpdate()
 end
@@ -142,6 +150,7 @@ function buttonProto:OnRelease()
 	self.texture = nil
 	self.bagFamily = nil
 	self.stack = nil
+	addon:SendMessage('AdiBags_ButtonProtoRelease', self)
 end
 
 function buttonProto:ToString()
@@ -280,7 +289,7 @@ end
 --------------------------------------------------------------------------------
 
 function buttonProto:OnShow()
-	self:RegisterEvent('BAG_UPDATE_COOLDOWN', 'UpdateCooldown')
+	self:RegisterEvent('BAG_UPDATE_COOLDOWN', 'UpdateCooldownCallback')
 	self:RegisterEvent('ITEM_LOCK_CHANGED', 'UpdateLock')
 	self:RegisterEvent('QUEST_ACCEPTED', 'UpdateBorder')
 	self:RegisterEvent('BAG_NEW_ITEMS_UPDATED', 'UpdateNew')
@@ -360,31 +369,19 @@ function buttonProto:Update()
 	end
 	self:UpdateCount()
 	self:UpdateBorder()
-	self:UpdateCooldown()
+	if self.UpdateCooldown then
+		self:UpdateCooldown(self.texture)
+	end
 	self:UpdateLock()
 	self:UpdateNew()
-	self:UpdateUpgradeIcon()
-	self:UpdateScrapIcon()
 	self:UpdateOverlay()
-	--self:UpdateQuestIcon()
 	self:UpdateKlixStyling()
+	if addon.isRetail then
+		self:UpdateUpgradeIcon()
+	end
 	if self.UpdateSearch then
 		self:UpdateSearch()
 	end
-	
-	-- Only way i can make the none scrapitems to hide, when the scrappingmachine is opened :S
-	if IsAddOnLoaded("Blizzard_ScrappingMachineUI") then
-		if _G.ScrappingMachineFrame:IsShown() then
-			if not self.ScrapIcon:IsShown() then
-				self.searchOverlay:Show()
-				self:SetAlpha(0.5)
-			end
-		else
-			self.searchOverlay:Hide()
-			self:SetAlpha(1)
-		end
-	end
-	
 	addon:SendMessage('AdiBags_UpdateButton', self)
 end
 
@@ -415,40 +412,47 @@ end
 function buttonProto:UpdateSearch()
 	local _, _, _, _, _, _, _, isFiltered = GetContainerItemInfo(self.bag, self.slot)
 	if isFiltered then
-		self.searchOverlay:Show()
-		self:SetAlpha(0.5)
+		self.searchOverlay:Show();
 	else
-		self.searchOverlay:Hide()
-		self:SetAlpha(1)
+		self.searchOverlay:Hide();
 	end
 end
 
-function buttonProto:UpdateCooldown()
+do
+	if not addon.isRetail then
+		function buttonProto:UpdateCooldown(texture)
+			return ContainerFrame_UpdateCooldown(self.bag, self)
+		end
+	end
+end
+
+function buttonProto:UpdateCooldownCallback()
 	if ElvUI then
 		ElvUI[1]:RegisterCooldown(self.Cooldown)
 	end
-	return ContainerFrame_UpdateCooldown(self.bag, self)
+	if not self.UpdateCooldown then return end
+	--TODO(lobato): This is an incredibly ugly hack to work around the fact that
+	-- Blizzard protects the item button frame if self.bagID is set.
+	-- There is a condition in which Blizzard code checks for bagID, fails, checks for the parent's
+	-- ID, and then fails again, leading to nil error spam if badID is not set.
+	-- I am unsure what is causing the second check to fail (GetParent), but this hack works around it.
+	-- Absolute worst case, some items may not have cooldowns displayed for the time being.
+	if self.bagID or (self.GetParent ~= nil and self:GetParent() ~= nil and self:GetParent().GetID ~= nil and self:GetParent():GetID() ~= nil) or not addon.isRetail then
+		self:UpdateCooldown(self.texture)
+	end
 end
 
 function buttonProto:UpdateNew()
 	self.BattlepayItemTexture:SetShown(IsBattlePayItem(self.bag, self.slot))
 end
 
-function buttonProto:UpdateUpgradeIcon()
-	local itemIsUpgrade
-	if _G.PawnIsContainerItemAnUpgrade then
-		itemIsUpgrade = _G.PawnIsContainerItemAnUpgrade(self.bag, self.slot)
-	else
-		itemIsUpgrade = _G.IsContainerItemAnUpgrade(self.bag, self.slot)
+if addon.isRetail then
+	function buttonProto:UpdateUpgradeIcon()
+		-- Use Pawn's (third-party addon) function if present; else fallback to Blizzard's.
+		local PawnIsContainerItemAnUpgrade = _G.PawnIsContainerItemAnUpgrade
+		local itemIsUpgrade = PawnIsContainerItemAnUpgrade and PawnIsContainerItemAnUpgrade(self.bag, self.slot) or IsContainerItemAnUpgrade(self.bag, self.slot)
+		self.UpgradeIcon:SetShown(itemIsUpgrade or false)
 	end
-	self.UpgradeIcon:SetShown(itemIsUpgrade or false)
-end
-
-function buttonProto:UpdateScrapIcon()
-	local itemLocation = _G.ItemLocation:CreateFromBagAndSlot(self.bag, self.slot)
-	if itemLocation then
-		self.ScrapIcon:SetShown(addon.db.profile.scrapIndicator and C_Item_DoesItemExist(itemLocation) and C_Item_CanScrapItem(itemLocation) or false)
-	end	
 end
 
 function buttonProto:UpdateQuestIcon()
@@ -466,15 +470,16 @@ function buttonProto:UpdateKlixStyling()
 	end
 end
 
-local function GetBorder(bag, slot, settings)
-	if settings.questIndicator then
-		local isQuestItem, questId, isActive = GetContainerItemQuestInfo(bag, slot)
-		if questId and not isActive then
-			--return TEXTURE_ITEM_QUEST_BANG, 1, 1, 0, settings.qualityOpacity
-			return nil, 1, 1, 0, settings.qualityOpacity
-		end
-		if questId or isQuestItem then
-			return nil, 1, 0.3, 0.3, settings.qualityOpacity
+local function GetBorder(bag, slot, itemId, settings)
+	if addon.isRetail or addon.isWrath then
+		if settings.questIndicator then
+			local isQuestItem, questId, isActive = GetContainerItemQuestInfo(bag, slot)
+			if questId and not isActive then
+				return nil, 1, 1, 0, settings.qualityOpacity
+			end
+			if questId or isQuestItem then
+				return nil, 1, 0.3, 0.3, settings.qualityOpacity
+			end
 		end
 	end
 	if not settings.qualityHighlight then
@@ -483,12 +488,18 @@ local function GetBorder(bag, slot, settings)
 	local _, _, _, quality = GetContainerItemInfo(bag, slot)
 	if quality == ITEM_QUALITY_POOR and settings.dimJunk then
 		local v = 1 - 0.5 * settings.qualityOpacity
-		return true, v, v, v, 1, "MOD"
+		return true, v, v, v, 1, nil, nil, nil, nil, "MOD"
 	end
-	local color = settings.allHighlight and BAG_ITEM_QUALITY_COLORS[quality] or quality ~= ITEM_QUALITY_COMMON and BAG_ITEM_QUALITY_COLORS[quality]
+	local color = quality ~= ITEM_QUALITY_COMMON and BAG_ITEM_QUALITY_COLORS[quality]
 	if color then
-		return [[Interface\Buttons\UI-ActionButton-Border]], color.r, color.g, color.b, settings.qualityOpacity, "ADD"
+		return [[Interface\Buttons\UI-ActionButton-Border]], color.r, color.g, color.b, settings.qualityOpacity, 14/64, 49/64, 15/64, 50/64, "ADD"
 	end
+end
+
+-- Bugfix: This fixes a bug where hasItem might be set to 1 by
+-- some internal Blizzard code.
+local function hasItem(i)
+	return i and i ~= 1
 end
 
 function buttonProto:UpdateBorder(isolatedEvent)
@@ -497,24 +508,58 @@ function buttonProto:UpdateBorder(isolatedEvent)
 	elseif KlixUI then
 		self:SetBackdropBorderColor(unpack(KlixUI[1].media.bordercolor))
 	end
-	local texture, r, g, b, a, blendMode
-	if self.hasItem then
-		texture, r, g, b, a, blendMode = GetBorder(self.bag, self.slot, addon.db.profile)
+	local texture, r, g, b, a, x1, x2, y1, y2, blendMode
+	if hasItem(self.hasItem) then
+		texture, r, g, b, a, x1, x2, y1, y2, blendMode = GetBorder(self.bag, self.slot, self.itemLink or self.itemId, addon.db.profile)
 	end
-	local border = self.IconQuestTexture
-	if not texture and texture ~= nil then
+	if not texture then
+		self.IconQuestTexture:Hide()
+	elseif not texture and texture ~= nil then
 		border:Hide()
 	else
+		local border = self.IconQuestTexture
 		if texture == true then
-			border:SetColorTexture(r, g, b, a)
-		--elseif texture == TEXTURE_ITEM_QUEST_BANG then
-			--border:SetTexture(texture)
-			--self:SetBackdropBorderColor(r, g, b, a)
+			if ElvUI or KlixUI then
+				border:SetColorTexture(r or 1, g or 1, b or 1, a or 1)
+			else
+				border:SetVertexColor(1, 1, 1, 1)
+				border:SetColorTexture(r or 1, g or 1, b or 1, a or 1)
+			end
 		else
-			border:SetTexture()
-			self:SetBackdropBorderColor(r, g, b, a)
+			if ElvUI or KlixUI then
+				if IsAddOnLoaded("AddOnSkins") then
+					border:SetTexture()
+					self:SetBackdropBorderColor(r, g, b, a)
+				else
+					self.borders = {}
+					local E, _, V, P, G = unpack(ElvUI)
+
+					for i=1, 4 do
+						self.borders[i] = self:CreateLine(nil, "BACKGROUND", nil, 0)
+						local l = self.borders[i]
+						l:SetThickness(E.global.general.UIScale)
+						l:SetColorTexture(r or 0, g or 0, b or 0, a or 1)
+						if i==1 then
+							l:SetStartPoint("TOPLEFT")
+							l:SetEndPoint("TOPRIGHT")
+						elseif i==2 then
+							l:SetStartPoint("TOPRIGHT")
+							l:SetEndPoint("BOTTOMRIGHT")
+						elseif i==3 then
+							l:SetStartPoint("BOTTOMRIGHT")
+							l:SetEndPoint("BOTTOMLEFT")
+						else
+							l:SetStartPoint("BOTTOMLEFT")
+							l:SetEndPoint("TOPLEFT")
+						end
+					end
+				end
+			else
+				border:SetTexture(texture)
+				border:SetVertexColor(r or 1, g or 1, b or 1, a or 1)
+			end				
 		end
-		border:SetTexCoord(0, 1, 0, 1)
+		border:SetTexCoord(x1 or 0, x2 or 1, y1 or 0, y2 or 1)
 		border:SetInside()
 		border:SetBlendMode(blendMode or "BLEND")
 		border:Show()
@@ -523,7 +568,7 @@ function buttonProto:UpdateBorder(isolatedEvent)
 	self:UpdateQuestIcon() -- place this here, else the questicon wont live update!
 	
 	if self.JunkIcon then
-		local quality = self.hasItem and select(3, GetItemInfo(self.itemLink or self.itemId))
+		local quality = hasItem(self.hasItem) and select(3, GetItemInfo(self.itemLink or self.itemId))
 		self.JunkIcon:SetShown(quality == ITEM_QUALITY_POOR and addon:GetInteractingWindow() == "MERCHANT")
 	end
 	if isolatedEvent then
@@ -536,7 +581,6 @@ function buttonProto:UpdateOverlay()
 		local atlasName
 		local itemIDOrLink = self.itemId or self.itemLink
 		local _, _, _, quality, _, _, _, _, _, _, isBound = GetContainerItemInfo(self.bag, self.slot)
-
 		if C_AzeriteEmpoweredItem_IsAzeriteEmpoweredItemByID(itemIDOrLink) then
 			atlasName = "AzeriteIconFrame"
 		elseif IsCorruptedItem(itemIDOrLink) then
@@ -546,7 +590,6 @@ function buttonProto:UpdateOverlay()
 		elseif C_Soulbinds_IsItemConduitByItemInfo(itemIDOrLink) then
 			atlasName = "ConduitIconFrame"
 		end
-
 		if atlasName then
 			if atlasName == "ConduitIconFrame" then
 				if not quality or not BAG_ITEM_QUALITY_COLORS[quality] then
@@ -569,7 +612,6 @@ function buttonProto:UpdateOverlay()
 		end
 	end
 end
-
 --------------------------------------------------------------------------------
 -- Item stack button
 --------------------------------------------------------------------------------
@@ -601,6 +643,7 @@ function stackProto:OnRelease()
 	self:SetSection(nil)
 	self.key = nil
 	self.container = nil
+	addon:SendMessage('AdiBags_ButtonProtoRelease', self)
 	wipe(self.slots)
 end
 
@@ -726,11 +769,18 @@ function stackProto:Update()
 	self:UpdateVisibleSlot()
 	self:UpdateCount()
 	if self.button then
-		self.button:FullUpdate()
+		self.button:Update()
 	end
 end
 
-stackProto.FullUpdate = stackProto.Update
+function stackProto:FullUpdate()
+	if not self:CanUpdate() then return end
+	self:UpdateVisibleSlot()
+	self:UpdateCount()
+	if self.button then
+		self.button:FullUpdate()
+	end
+end
 
 function stackProto:UpdateCount()
 	local count = 0

@@ -1,6 +1,6 @@
 --[[
 AdiBags - Adirelle's bag addon.
-Copyright 2010-2014 Adirelle (adirelle@gmail.com)
+Copyright 2010-2021 Adirelle (adirelle@gmail.com)
 All rights reserved.
 
 This file is part of AdiBags.
@@ -60,6 +60,7 @@ end
 
 local function AnchoredBagLayout(self)
 	self.anchor:ApplySettings()
+	self:Debug("Anchor Bag Layout")
 
 	local nextBag, data, firstIndex = self:IterateBags(true)
 	local index, bag = nextBag(data, firstIndex)

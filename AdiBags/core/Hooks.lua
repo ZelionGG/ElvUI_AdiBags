@@ -1,6 +1,6 @@
 --[[
 AdiBags - Adirelle's bag addon.
-Copyright 2010-2014 Adirelle (adirelle@gmail.com)
+Copyright 2010-2021 Adirelle (adirelle@gmail.com)
 All rights reserved.
 
 This file is part of AdiBags.
@@ -77,7 +77,7 @@ function addon:GetContainerFrame(id, spawn)
 	if spawn then
 		local size = GetContainerNumSlots(id)
 		if size > 0 then
-			local frame = ContainerFrame_GetOpenFrame()
+			local frame = ContainerFrame_GetOpenFrame(id)
 			ContainerFrame_GenerateFrame(frame, size, id)
 		end
 	end

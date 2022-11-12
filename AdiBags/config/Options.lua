@@ -1,6 +1,6 @@
 --[[
 AdiBags - Adirelle's bag addon.
-Copyright 2010-2014 Adirelle (adirelle@gmail.com)
+Copyright 2010-2021 Adirelle (adirelle@gmail.com)
 All rights reserved.
 
 This file is part of AdiBags.
@@ -274,7 +274,7 @@ local function GetOptions()
 		name = addonName..' DEV',
 		--@end-debug@]===]
 		--@non-debug@
-		name = "ElvUI "..addonName..' Build 17',
+		name = addonName..' v1.9.46',
 		--@end-non-debug@
 		type = 'group',
 		handler = addon:GetOptionHandler(addon),
@@ -295,16 +295,6 @@ local function GetOptions()
 				width = 'double',
 				type = 'toggle',
 				order = 110,
-			},
-			muteBugGrabber = {
-				name = L['No error reports'],
-				desc = L['Check to disable error reporting.'],
-				type = 'toggle',
-				order = 115,
-				confirm = function(_, value) return value and L["If the addon seems not to work properly, please re-enable error reporting and check again before filing a bug ticket."] end,
-				get = function() return addon.db.global.muteBugGrabber end,
-				set = function(_, v) addon.db.global.muteBugGrabber = v end,
-				hidden = not addon.BugGrabber,
 			},
 			bags = {
 				name = L['Bags'],
@@ -329,13 +319,6 @@ local function GetOptions()
 								desc = L["Automatically open the bags at merchant's, bank, ..."],
 								type = 'toggle',
 								order = 95,
-							},
-							autoDeposit = {
-								name = L["Deposit reagents"],
-								desc = L["Automtically deposit all reagents into the reagent bank when you talk to the banker."],
-								type = 'toggle',
-								order = 110,
-								disabled = function() return not IsReagentBankUnlocked() end,
 							},
 						}
 					},
@@ -377,7 +360,7 @@ local function GetOptions()
 								isPercent = true,
 								min = 0.1,
 								max = 3.0,
-								step = 0.001,
+								step = 0.1,
 								set = function(info, newScale)
 									addon.db.profile.scale = newScale
 									addon:LayoutBags()
@@ -411,6 +394,19 @@ local function GetOptions()
 									addon:SendMessage('AdiBags_LayoutChanged')
 								end,
 							},
+							--[[
+							gridLayout = {
+								name = L['(BETA) Grid Layout'],
+								desc = L['When enabled, AdiBags switches to a grid layout with dragable sections.'],
+								type = 'toggle',
+								order = 135,
+								set = function(info, gridLayout)
+									addon.db.profile.gridLayout = gridLayout
+									ReloadUI()
+									addon:SendMessage('AdiBags_GridLayoutChanged')
+								end,
+							},
+							--]]
 							columnWidth = {
 								name = L['Column width'],
 								desc = L['Adjust the width of the bag columns.'],
@@ -556,20 +552,11 @@ local function GetOptions()
 									return info.handler:IsDisabled(info) or not addon.db.profile.qualityHighlight
 								end,
 							},
-							allHighlight = {
-								name = L['Highlight All'],
-								desc = L['Check this to display borders around no quality items in your bag.'],
-								type = 'toggle',
-								order = 225,
-								disabled = function(info)
-									return info.handler:IsDisabled(info) or not addon.db.profile.qualityHighlight
-								end,
-							},
 							dimJunk = {
 								name = L['Dim junk'],
 								desc = L['Check this to have poor quality items dimmed.'],
 								type = 'toggle',
-								order = 230,
+								order = 225,
 								disabled = function(info)
 									return info.handler:IsDisabled(info) or not addon.db.profile.qualityHighlight
 								end,
@@ -581,12 +568,6 @@ local function GetOptions()
 						desc = L['Check this to display an indicator on quest items.'],
 						type = 'toggle',
 						order = 230,
-					},
-					scrapIndicator = {
-						name = L['Scrap indicator'],
-						desc = L['Check this to display an indicator on scrappable items.'],
-						type = 'toggle',
-						order = 235,
 					},
 					showBagType = {
 						name = L['Bag type'],
@@ -678,6 +659,15 @@ local function GetOptions()
 		},
 		plugins = {}
 	}
+	if addon.isRetail then
+		options["args"]["bags"]["args"]["automatically"]["args"]["autoDeposit"] = {
+			name = L["Deposit reagents"],
+			desc = L["Automtically deposit all reagents into the reagent bank when you talk to the banker."],
+			type = 'toggle',
+			order = 110,
+			disabled = function() return not IsReagentBankUnlocked() end,
+		}
+	end
 	hooksecurefunc(addon, "OnModuleCreated", OnModuleCreated)
 	for name, module in addon:IterateModules() do
 		OnModuleCreated(addon, module)
@@ -696,7 +686,7 @@ end
 LibStub('AceConfig-3.0'):RegisterOptionsTable(addonName, GetOptions)
 
 function addon:OpenOptions(...)
-	AceConfigDialog:SetDefaultSize(addonName, 850, 650)
+	AceConfigDialog:SetDefaultSize(addonName, 800, 600)
 	if select('#', ...) > 0 then
 		self:Debug('OpenOptions =>', select('#', ...), ...)
 		AceConfigDialog:Open(addonName)
@@ -705,4 +695,3 @@ function addon:OpenOptions(...)
 		AceConfigDialog:Open(addonName)
 	end
 end
-

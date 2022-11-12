@@ -1,6 +1,6 @@
 --[[
 AdiBags - Adirelle's bag addon.
-Copyright 2010-2014 Adirelle (adirelle@gmail.com)
+Copyright 2010-2021 Adirelle (adirelle@gmail.com)
 All rights reserved.
 
 This file is part of AdiBags.
@@ -76,7 +76,7 @@ function proto:SetSetting(info, value, ...)
 			return
 		end
 		db[name] = value
-		self:SetFont(LSM:Fetch(FONT, db.name), db.size)
+		self:SetFont(LSM:Fetch(FONT, db.name), db.size, "")
 	else
 		return
 	end
@@ -96,7 +96,7 @@ end
 
 function proto:ApplySettings()
 	local db = self:GetDB()
-	self:SetFont(LSM:Fetch(FONT, db.name), db.size)
+	self:SetFont(LSM:Fetch(FONT, db.name), db.size, "")
 	self:SetTextColor(db.r, db.g, db.b)
 end
 
@@ -164,7 +164,7 @@ function addon:CreateFontOptions(font, title, order)
 				order = 20,
 				min = mediumSize - 8,
 				max = mediumSize + 8,
-				step = 4,
+				step = 1,
 			},
 			color = {
 				name = L['Color'],

@@ -1,6 +1,6 @@
 --[[
 AdiBags - Adirelle's bag addon.
-Copyright 2010-2014 Adirelle (adirelle@gmail.com)
+Copyright 2010-2021 Adirelle (adirelle@gmail.com)
 All rights reserved.
 
 This file is part of AdiBags.
@@ -272,7 +272,7 @@ do
 
 	function bank:PreOpen()
 		self.hooks[BankFrame].Show(BankFrame)
-		if addon.db.profile.autoDeposit and not IsModifierKeyDown() then
+		if addon.isRetail and addon.db.profile.autoDeposit and not IsModifierKeyDown() then
 			DepositReagentBank()
 		end
 	end
