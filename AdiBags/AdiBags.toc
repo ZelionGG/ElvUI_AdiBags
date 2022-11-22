@@ -17,21 +17,19 @@
 # You should have received a copy of the GNU General Public License
 # along with AdiBags.  If not, see <http://www.gnu.org/licenses/>.
 
-## Interface: 100000
+## Interface: 100002
 
 ## Title: AdiBags
 ## Notes: Adirelle's bag addon.
 ## Author: Adirelle
-## Version: v1.9.46
+## Version: v1.9.47
 ## SavedVariables: AdiBagsDB
-## X-Date: 2022-10-29T17:40:30Z
+## X-Date: 2022-11-21T20:21:49Z
 ## X-License: GPL v3
 ## OptionalDeps: LibStub, CallbackHandler-1.0, Ace3, LibSharedMedia-3.0, Scrap, BrainDead, SyLevel
 #@alpha@
 # ## OptionalDeps: AdiDebug, BugSack, Swatter
 #@end-alpha@
-
-Loading.lua
 
 #@no-lib-strip@
 libs\LibStub\LibStub.lua
@@ -45,7 +43,7 @@ libs\LibCustomGlow-1.0\LibCustomGlow-1.0.lua
 #@end-no-lib-strip@
 
 libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
-
+Loading.lua
 Localization.lua
 core\EventHandlers.lua
 core\Constants.lua

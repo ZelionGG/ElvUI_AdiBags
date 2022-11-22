@@ -1,10 +1,102 @@
-lightweight tag 95b17b92d788242d75c4b66a44f1f57ebc445147 v1.9.46
+lightweight tag 5b0d33ed30eab9f0dad2cc990e6bc626e15c0823 v1.9.47
 Author:	GitHub <noreply@github.com>
-Date:	Sat Oct 29 10:40:30 2022 -0700
+Date:	Mon Nov 21 12:21:49 2022 -0800
 
-commit 95b17b92d788242d75c4b66a44f1f57ebc445147
+commit 5b0d33ed30eab9f0dad2cc990e6bc626e15c0823
 Author: Antonio Lobato <aj.lobato@gmail.com>
-Date:   Sat Oct 29 10:40:30 2022 -0700
+Date:   Mon Nov 21 12:21:49 2022 -0800
 
-    Another cooldown fix for banks. (#748)
+    Various bug fixes for Dragonflight (#759)
+    
+    This CL fixes the addon not loading for users and eliminates most errors so the Addon is usable. This CL does not add new features or support for the new bag type in Retail, yet. A set of more comprehensive updates will be released at a later date.
+    
+    * Fixed a nil value bug in ItemLevel.lua
+    
+    * Updated docmeta
+    
+    * Fixed bug that caused item borders not to update.
+    
+    * Updated config TOC
+
+commit aee2c2e6838bdaeec46a3f923c516912545f5030
+Author: jnwhiteh <jnwhiteh@gmail.com>
+Date:   Fri Nov 18 19:16:22 2022 +0100
+
+    Resolve issues with new container APIs (#788)
+    
+    * Resolve issues with container apis
+    
+    The container APIs on 10.0.2 have moved into C_Container and a few functions
+    have been outright removed.
+    
+    In addition the returns for GetContainerItemInfo and GetContainerItemQuestInfo
+    have changed to use tables instead of a long list of returns.
+    
+    This introduces a set of wrapper functions to handle working with both the
+    new C_Container APIs and the legacy APIs to support wrath and classic-era.
+    
+    * Only activate for GameTooltip
+    
+    The new AddTooltipPostCall would be called for other tooltips as well,
+    so maintain the existing behaviour by verifying we have the correct frame.
+    
+    * Update TOC for 10.0.2
+    
+    * Fix an issue with search/filtering not updating
+    
+    Searching was not properly showing the overlay, this restores the
+    previous behaviour.
+    
+    * Fix an issue with missing stack counts
+    
+    This was caused during my attempt to clean up the code a bit, but
+    fixes the remaining uses of the stackCount.
+
+commit 7b1f0216361ab2d3338e6d33b0206419c788a04b
+Author: Antonio Lobato <aj.lobato@gmail.com>
+Date:   Sat Oct 29 18:48:26 2022 -0700
+
+    Removal of prepoulated title.
+
+commit 1060712e0c4b991f6084c1bd5d1569e4fce602db
+Author: Antonio Lobato <aj.lobato@gmail.com>
+Date:   Sat Oct 29 18:47:26 2022 -0700
+
+    Adjust title so it is blank
+
+commit 0ea62a42b7c6fa753d4a8ff42b690978620d60b5
+Author: Antonio Lobato <aj.lobato@gmail.com>
+Date:   Sat Oct 29 14:22:59 2022 -0700
+
+    Updated issue form with more fields.
+
+commit 0f318f1f027e2427c85836835ab63e96697e42ff
+Author: Antonio Lobato <aj.lobato@gmail.com>
+Date:   Sat Oct 29 14:15:43 2022 -0700
+
+    Added feature request form template, disabled blank issues.
+
+commit 1505aa60ea862a055d9b56d4c3e2e22560566801
+Author: Antonio Lobato <aj.lobato@gmail.com>
+Date:   Sat Oct 29 14:09:44 2022 -0700
+
+    Small fix for bug report form
+
+commit e399dda3fb007943b8055cb6a5aa10ed291b3b78
+Author: Antonio Lobato <aj.lobato@gmail.com>
+Date:   Sat Oct 29 14:02:13 2022 -0700
+
+    blank issue enabled (for now)
+
+commit 251c4a48a25c847d6627213accc43b0cc7d42d21
+Author: Antonio Lobato <aj.lobato@gmail.com>
+Date:   Sat Oct 29 14:01:16 2022 -0700
+
+    Added forced templates to Github issue templates. (#753)
+
+commit de3d69424820e9874929a68caf331d7093669ad7
+Author: Antonio Lobato <aj.lobato@gmail.com>
+Date:   Sat Oct 29 11:57:06 2022 -0700
+
+    Fixed a bug where disabling AdiBags would cause weird issues with Combined bags (#752)
 

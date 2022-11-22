@@ -166,6 +166,7 @@ function mod:UpdateButton_Retail(event, button)
 				and (quality ~= ITEM_QUALITY_POOR or not settings.ignoreJunk)
 				and (loc ~= "" or not settings.equippableOnly)
 				and (quality ~= ITEM_QUALITY_HEIRLOOM or not settings.ignoreHeirloom)
+				and colorSchemes[settings.colorScheme] ~= nil
 			then
 				color = {colorSchemes[settings.colorScheme](level, quality, reqLevel, (loc ~= ""))}
 				shouldShow = true
@@ -219,6 +220,7 @@ function mod:UpdateButton_Classic(event, button)
 		if level >= settings.minLevel
 			and (quality ~= LE_ITEM_QUALITY_POOR or not settings.ignoreJunk)
 			and (loc ~= "" or not settings.equippableOnly)
+			and colorSchemes[settings.colorScheme] ~= nil
 		then
 			if SyLevel then
 				if settings.useSyLevel then
@@ -280,7 +282,7 @@ function mod:GetOptions()
 				none     = L['None'],
 				original = L['Same as InventoryItemLevels'],
 				level    = L['Related to player level'],
-				qualityColor = L['Same as quality colour'],
+				qualityColor = L['Same as quality color'],
 			},
 			order = 20,
 			set = SetOptionAndUpdate,
@@ -504,15 +506,6 @@ do
 		else
 			-- Would this happen ?
 			return 1, 1, 1
-		end
-	end
-	-- Color scheme for quality colors
-	do
-		colorSchemes.qualityColor = function(level, quality)
-			r, g, b, hex = GetItemQualityColor(quality)
-			return r,g,b
-
-
 		end
 	end
 end
