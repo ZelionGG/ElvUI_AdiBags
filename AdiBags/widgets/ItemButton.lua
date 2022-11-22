@@ -739,6 +739,7 @@ end
 function stackProto:UpdateCount()
 	local count = 0
 	for slotId in pairs(self.slots) do
+
 		count = count + (addon:GetContainerItemStackCount(GetBagSlotFromId(slotId)) or 1)
 	end
 	self.count = count
