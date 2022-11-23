@@ -121,6 +121,7 @@ end
 
 local function CreateText(button)
 	local text = button:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
+                                        
 	text:Hide()
 	texts[button] = text
 	return text
@@ -507,4 +508,13 @@ do
 			return 1, 1, 1
 		end
 	end
+    -- Color scheme for quality colors
+    do
+        colorSchemes.qualityColor = function(level, quality)
+            r, g, b, hex = GetItemQualityColor(quality)
+            return r,g,b
+
+
+        end
+    end
 end
