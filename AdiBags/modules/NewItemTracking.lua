@@ -1,6 +1,6 @@
 --[[
 AdiBags - Adirelle's bag addon.
-Copyright 2012-2014 Adirelle (adirelle@gmail.com)
+Copyright 2012-2021 Adirelle (adirelle@gmail.com)
 All rights reserved.
 
 This file is part of AdiBags.
@@ -27,11 +27,19 @@ local LCG = LibStub('LibCustomGlow-1.0')
 local _G = _G
 local BACKPACK_CONTAINER = _G.BACKPACK_CONTAINER
 local CreateFrame = _G.CreateFrame
-local GetContainerItemInfo = _G.GetContainerItemInfo
-local GetContainerNumSlots = _G.GetContainerNumSlots
+local GetContainerNumSlots = C_Container and C_Container.GetContainerNumSlots or GetContainerNumSlots
 local GetInventoryItemID = _G.GetInventoryItemID
 local GetInventoryItemLink = _G.GetInventoryItemLink
-local ITEM_QUALITY_POOR = _G.Enum.ItemQuality.Poor
+local IsBattlePayItem = C_Container and C_Container.IsBattlePayItem or IsBattlePayItem
+
+local ITEM_QUALITY_POOR
+
+if addon.isRetail then
+	ITEM_QUALITY_POOR = _G.Enum.ItemQuality.Poor
+else
+	ITEM_QUALITY_POOR = _G.LE_ITEM_QUALITY_POOR
+end
+
 local next = _G.next
 local pairs = _G.pairs
 local PlaySound = _G.PlaySound
@@ -139,7 +147,7 @@ function mod:IsNew(bag, slot, link)
 	elseif not addon.BAG_IDS.BANK[bag]
 		and C_NewItems.IsNewItem(bag, slot)
 		and not IsBattlePayItem(bag, slot)
-		and (not self.db.profile.ignoreJunk or select(4, GetContainerItemInfo(bag, slot)) ~= ITEM_QUALITY_POOR)
+		and (not self.db.profile.ignoreJunk or addon:GetContainerItemQuality(bag, slot) ~= ITEM_QUALITY_POOR)
 	then
 		newItems[link] = true
 		return true
@@ -214,6 +222,12 @@ function mod:GetOptions()
 			width = 'double',
 			disabled = function() return mod.db.profile.highlight == "none" end,
 		},
+		highlightChangedItems = {
+			name = L['Highlight items that have changed'],
+			type = 'toggle',
+			order = 50,
+			width = 'double'
+		}
 	}, addon:GetOptionHandler(self)
 end
 
@@ -222,8 +236,9 @@ end
 --------------------------------------------------------------------------------
 
 function mod:ShowBlizzardGlow(button, enable)
+	if not button.NewItemTexture then return end
 	if enable then
-		local _, _, _, quality = GetContainerItemInfo(button.bag, button.slot)
+		local _, _, _, quality = addon:GetContainerItemQuality(button.bag, button.slot)
 		if quality and NEW_ITEM_ATLAS_BY_QUALITY[quality] then
 			button.NewItemTexture:SetAtlas(NEW_ITEM_ATLAS_BY_QUALITY[quality])
 		else

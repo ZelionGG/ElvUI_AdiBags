@@ -1,6 +1,6 @@
 --[[
 AdiBags - Adirelle's bag addon.
-Copyright 2010-2014 Adirelle (adirelle@gmail.com)
+Copyright 2010-2021 Adirelle (adirelle@gmail.com)
 All rights reserved.
 
 This file is part of AdiBags.
@@ -25,7 +25,8 @@ local L = addon.L
 --<GLOBALS
 local _G = _G
 local ADDON_LOAD_FAILED = _G.ADDON_LOAD_FAILED
-local BANK_CONTAINER = _G.BANK_CONTAINER
+local BANK_CONTAINER = _G.BANK_CONTAINER or ( Enum.BagIndex and Enum.BagIndex.Bank ) or -1
+local REAGENTBAG_CONTAINER = ( Enum.BagIndex and Enum.BagIndex.REAGENTBAG_CONTAINER ) or 5
 local CloseWindows = _G.CloseWindows
 local CreateFrame = _G.CreateFrame
 local format = _G.format
@@ -45,32 +46,32 @@ local unpack = _G.unpack
 --GLOBALS>
 
 LibStub('AceAddon-3.0'):NewAddon(addon, addonName, 'ABEvent-1.0', 'ABBucket-1.0', 'AceHook-3.0', 'AceConsole-3.0')
---[===[@debug@
+--[==[@debug@
 _G[addonName] = addon
---@end-debug@]===]
+--@end-debug@]==]
 
 --------------------------------------------------------------------------------
 -- Debug stuff
 --------------------------------------------------------------------------------
 
---[===[@alpha@
+--[=[@alpha@
 if AdiDebug then
 	AdiDebug:Embed(addon, addonName)
 else
---@end-alpha@]===]
+--@end-alpha@]=]
 	function addon.Debug() end
---[===[@alpha@
+--[=[@alpha@
 end
---@end-alpha@]===]
+--@end-alpha@]=]
 
---[===[@debug@
+--[==[@debug@
 local function DebugTable(t, prevKey)
 	local k, v = next(t, prevKey)
 	if k ~= nil then
 		return k, v, DebugTable(t, k)
 	end
 end
---@end-debug@]===]
+--@end-debug@]==]
 
 --------------------------------------------------------------------------------
 -- Addon initialization and enabling
@@ -108,7 +109,14 @@ function addon:OnInitialize()
 	self:RegisterChatCommand("adibags", function(cmd)
 		addon:OpenOptions(strsplit(' ', cmd or ""))
 	end, true)
-	
+
+	-- Just a warning
+	--[=[@alpha@
+	if geterrorhandler() == _G._ERRORMESSAGE and not GetCVarBool("scriptErrors") then
+		print('|cffffee00', L["Warning: You are using an alpha or beta version of AdiBags without displaying Lua errors. If anything goes wrong, AdiBags (or any other addon causing some error) will simply stop working for apparently no reason. Please either enable the display of Lua errors or install an error handler addon like BugSack or Swatter."], '|r')
+	end
+	--@end-alpha@]=]
+
 	self:Debug('Initialized')
 end
 
@@ -119,24 +127,15 @@ function addon:OnEnable()
 	self:RegisterEvent('BAG_UPDATE')
 	self:RegisterEvent('BAG_UPDATE_DELAYED')
 	self:RegisterBucketEvent('PLAYERBANKSLOTS_CHANGED', 0.01, 'BankUpdated')
-	self:RegisterBucketEvent('PLAYERREAGENTBANKSLOTS_CHANGED', 0.01, 'ReagentBankUpdated')
+	if addon.isRetail then
+		self:RegisterBucketEvent('PLAYERREAGENTBANKSLOTS_CHANGED', 0.01, 'ReagentBankUpdated')
+	end
 
 	self:RegisterEvent('PLAYER_LEAVING_WORLD', 'Disable')
 
 	self:RegisterMessage('AdiBags_BagOpened', 'LayoutBags')
 	self:RegisterMessage('AdiBags_BagClosed', 'LayoutBags')
-
-	self:RawHook("OpenAllBags", true)
-	self:RawHook("CloseAllBags", true)
-	self:RawHook("ToggleAllBags", true)
-	self:RawHook("ToggleBackpack", true)
-	self:RawHook("ToggleBag", true)
-	self:RawHook("OpenBag", true)
-	self:RawHook("CloseBag", true)
-	self:RawHook("OpenBackpack", true)
-	self:RawHook("CloseBackpack", true)
-	self:RawHook('CloseSpecialWindows', true)
-
+	
 	-- Track most windows involving items
 	self:RegisterEvent('BANKFRAME_OPENED', 'UpdateInteractingWindow')
 	self:RegisterEvent('BANKFRAME_CLOSED', 'UpdateInteractingWindow')
@@ -150,14 +149,8 @@ function addon:OnEnable()
 	self:RegisterEvent('TRADE_CLOSED', 'UpdateInteractingWindow')
 	self:RegisterEvent('GUILDBANKFRAME_OPENED', 'UpdateInteractingWindow')
 	self:RegisterEvent('GUILDBANKFRAME_CLOSED', 'UpdateInteractingWindow')
-	self:RegisterEvent('VOID_STORAGE_OPEN', 'UpdateInteractingWindow')
-	self:RegisterEvent('VOID_STORAGE_CLOSE', 'UpdateInteractingWindow')
 	self:RegisterEvent('SOCKET_INFO_UPDATE', 'UpdateInteractingWindow')
 	self:RegisterEvent('SOCKET_INFO_CLOSE', 'UpdateInteractingWindow')
-	self:RegisterEvent('OBLITERUM_FORGE_SHOW', 'UpdateInteractingWindow')
-	self:RegisterEvent('OBLITERUM_FORGE_CLOSE', 'UpdateInteractingWindow')
-	self:RegisterEvent('SCRAPPING_MACHINE_SHOW', 'UpdateInteractingWindow')
-	self:RegisterEvent('SCRAPPING_MACHINE_CLOSE', 'UpdateInteractingWindow')
 
 	self:SetSortingOrder(self.db.profile.sortingOrder)
 
@@ -182,6 +175,32 @@ function addon:OnDisable()
 	self.anchor:Hide()
 	self:CloseAllBags()
 	self:Debug('Disabled')
+end
+
+function addon:EnableHooks()
+	self:RawHook("OpenAllBags", true)
+	self:RawHook("CloseAllBags", true)
+	self:RawHook("ToggleAllBags", true)
+	self:RawHook("ToggleBackpack", true)
+	self:RawHook("ToggleBag", true)
+	self:RawHook("OpenBag", true)
+	self:RawHook("CloseBag", true)
+	self:RawHook("OpenBackpack", true)
+	self:RawHook("CloseBackpack", true)
+	self:RawHook('CloseSpecialWindows', true)
+end
+
+function addon:DisableHooks()
+	self:Unhook("OpenAllBags")
+	self:Unhook("CloseAllBags")
+	self:Unhook("ToggleAllBags")
+	self:Unhook("ToggleBackpack")
+	self:Unhook("ToggleBag")
+	self:Unhook("OpenBag")
+	self:Unhook("CloseBag")
+	self:Unhook("OpenBackpack")
+	self:Unhook("CloseBackpack")
+	self:Unhook('CloseSpecialWindows')
 end
 
 function addon:Reconfigure()
@@ -260,27 +279,6 @@ function addon:UpgradeProfile()
 end
 
 --------------------------------------------------------------------------------
--- Error reporting
---------------------------------------------------------------------------------
-
-local BugGrabber = addon.BugGrabber
-if BugGrabber then
-	if BugGrabber.setupCallbacks then
-		BugGrabber.setupCallbacks()
-	end
-	local pattern = "("..addonName.."[^\n]+%.lua):%d+:"
-	BugGrabber.RegisterCallback(addon, 'BugGrabber_BugGrabbed', function(_, errorObject)
-		local ref = errorObject and errorObject.stack and strmatch(errorObject.stack, pattern)
-		if ref and not strmatch(ref, '\\libs\\') then
-			if not addon.db.global.muteBugGrabber then
-				print(format('|cffffff00'..L['Error in %s: %s -- details: %s'], addonName, '|r'..errorObject.message, BugGrabber:GetChatLink(errorObject)))
-			end
-			addon:Debug('Error:', errorObject.message)
-		end
-	end)
-end
-
---------------------------------------------------------------------------------
 -- Option addon handling
 --------------------------------------------------------------------------------
 
@@ -312,21 +310,7 @@ do
 	fs:SetJustifyH("LEFT")
 	fs:SetJustifyV("TOP")
 	fs:SetText(addonName)
-	
-	local br1 = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-	br1:SetPoint("TOPLEFT", 10, -35)
-	br1:SetPoint("BOTTOMRIGHT", panel, "TOPRIGHT", 10, -45)
-	br1:SetJustifyH("LEFT")
-	br1:SetJustifyV("TOP")
-	br1:SetText(L["BUG_REPORT1"])
-	
-	local br2 = panel:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-	br2:SetPoint("TOPLEFT", 10, -57)
-	br2:SetPoint("BOTTOMRIGHT", panel, "TOPRIGHT", 10, -45)
-	br2:SetJustifyH("LEFT")
-	br2:SetJustifyV("TOP")
-	br2:SetText(L["BUG_REPORT2"])
-	
+
 	local button = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
 	button:SetText(L['Configure'])
 	button:SetWidth(128)
@@ -362,7 +346,10 @@ addon:SetDefaultModulePrototype(moduleProto)
 
 local updatedBags = {}
 local updatedBank = { [BANK_CONTAINER] = true }
-local updatedReagentBank = { [REAGENTBANK_CONTAINER] = true }
+local updatedReagentBank = {}
+if addon.isRetail then
+	updatedReagentBank = { [REAGENTBANK_CONTAINER] = true }
+end
 
 function addon:BAG_UPDATE(event, bag)
 	updatedBags[bag] = true
@@ -392,9 +379,9 @@ function addon:ReagentBankUpdated(slots)
 end
 
 function addon:ConfigChanged(vars)
-	--[===[@debug@
+	--[==[@debug@
 	self:Debug('ConfigChanged', DebugTable(vars))
-	--@end-debug@]===]
+	--@end-debug@]==]
 	if vars.enabled then
 		if self.db.profile.enabled then
 			self:Enable()

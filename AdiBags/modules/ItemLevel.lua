@@ -1,6 +1,6 @@
 --[[
 AdiBags - Adirelle's bag addon.
-Copyright 2013-2014 Adirelle (adirelle@gmail.com)
+Copyright 2013-2021 Adirelle (adirelle@gmail.com)
 All rights reserved.
 
 This file is part of AdiBags.
@@ -26,8 +26,17 @@ local L = addon.L
 local _G = _G
 local abs = _G.math.abs
 local GetItemInfo = _G.GetItemInfo
-local ITEM_QUALITY_HEIRLOOM = _G.Enum.ItemQuality.Heirloom
-local ITEM_QUALITY_POOR = _G.Enum.ItemQuality.Poor
+local ITEM_QUALITY_HEIRLOOM
+local ITEM_QUALITY_POOR
+
+if addon.isRetail then
+	ITEM_QUALITY_HEIRLOOM = _G.Enum.ItemQuality.Heirloom
+	ITEM_QUALITY_POOR = _G.Enum.ItemQuality.Poor
+else
+	ITEM_QUALITY_HEIRLOOM = _G.LE_ITEM_QUALITY_HEIRLOOM
+	ITEM_QUALITY_POOR = _G.LE_ITEM_QUALITY_POOR
+end
+
 local QuestDifficultyColors = _G.QuestDifficultyColors
 local UnitLevel = _G.UnitLevel
 local modf = _G.math.modf
@@ -37,7 +46,10 @@ local pairs = _G.pairs
 local select = _G.select
 local unpack = _G.unpack
 local wipe = _G.wipe
-local ExtractLink = _G.LinkUtil.ExtractLink
+local ExtractLink
+if addon.isRetail then
+	ExtractLink = _G.LinkUtil.ExtractLink
+end
 --GLOBALS>
 
 local mod = addon:NewModule('ItemLevel', 'ABEvent-1.0')
@@ -115,6 +127,14 @@ local function CreateText(button)
 end
 
 function mod:UpdateButton(event, button)
+	if addon.isRetail then
+		mod:UpdateButton_Retail(event, button)
+	else
+		mod:UpdateButton_Classic(event, button)
+	end
+end
+
+function mod:UpdateButton_Retail(event, button)
 	local settings = self.db.profile
 	local text = texts[button]
 	local link = button:GetItemLink()
@@ -142,9 +162,10 @@ function mod:UpdateButton(event, button)
 			local item = Item:CreateFromBagAndSlot(button.bag, button.slot)
 			level = item and item:GetCurrentItemLevel() or 0
 			if level >= settings.minLevel
-							and (quality ~= ITEM_QUALITY_POOR or not settings.ignoreJunk)
-							and (loc ~= "" or not settings.equippableOnly)
-							and (quality ~= ITEM_QUALITY_HEIRLOOM or not settings.ignoreHeirloom)
+				and (quality ~= ITEM_QUALITY_POOR or not settings.ignoreJunk)
+				and (loc ~= "" or not settings.equippableOnly)
+				and (quality ~= ITEM_QUALITY_HEIRLOOM or not settings.ignoreHeirloom)
+				and colorSchemes[settings.colorScheme] ~= nil
 			then
 				color = {colorSchemes[settings.colorScheme](level, quality, reqLevel, (loc ~= ""))}
 				shouldShow = true
@@ -186,6 +207,47 @@ function mod:UpdateButton(event, button)
 	updateCache[button] = link
 end
 
+function mod:UpdateButton_Classic(event, button)
+	local settings = self.db.profile
+	local link = button:GetItemLink()
+	local text = texts[button]
+
+	if link then
+		local _, _, quality, _, reqLevel, _, _, _, loc = GetItemInfo(link)
+		local item = Item:CreateFromBagAndSlot(button.bag, button.slot)
+		local level = item and item:GetCurrentItemLevel() or 0
+		if level >= settings.minLevel
+			and (quality ~= LE_ITEM_QUALITY_POOR or not settings.ignoreJunk)
+			and (loc ~= "" or not settings.equippableOnly)
+			and colorSchemes[settings.colorScheme] ~= nil
+		then
+			if SyLevel then
+				if settings.useSyLevel then
+					if text then
+						text:Hide()
+					end
+					SyLevel:CallFilters('Adibags', button, link)
+					return
+				else
+					SyLevel:CallFilters('Adibags', button, nil)
+				end
+			end
+			if not text then
+				text = CreateText(button)
+			end
+			text:SetText(level)
+			text:SetTextColor(colorSchemes[settings.colorScheme](level, quality, reqLevel, (loc ~= "")))
+			return text:Show()
+		end
+	end
+	if SyLevel then
+		SyLevel:CallFilters('Adibags', button, nil)
+	end
+	if text then
+		text:Hide()
+	end
+end
+
 local function SetOptionAndUpdate(info, value)
 	mod.db.profile[info[#info]] = value
 	wipe(updateCache)
@@ -219,7 +281,7 @@ function mod:GetOptions()
 				none     = L['None'],
 				original = L['Same as InventoryItemLevels'],
 				level    = L['Related to player level'],
-				qualityColor = L['Same as quality colour'],
+				qualityColor = L['Same as quality color'],
 			},
 			order = 20,
 			set = SetOptionAndUpdate,
@@ -291,6 +353,28 @@ do
 				return unpack(tuple, 2, 4)
 			end
 		end
+	end
+end
+
+local maxLevelRanges = {}
+do
+	if addon.isRetail then
+		maxLevelRanges = {
+			[50] = {  72, 140 }, -- Battle for Azeroth
+			[60] = { 158, 310 }, -- Shadowlands
+			[70] = { 311, 415 }, -- Dragonflight
+		}
+	else
+		maxLevelRanges = {
+			[60]  = {  66,  92 },
+			[70]  = { 100, 164 },
+			[80]  = { 187, 284 },
+			[85]  = { 333, 416 },
+			[90]  = { 450, 616 },
+			[100] = { 615, 735 },
+			[110] = { 805, 905 },
+			[120] = { 310, 350 },
+		}
 	end
 end
 
@@ -382,11 +466,6 @@ do
 		end
 	end
 
-	local maxLevelRanges = {
-		[50] = {  72, 140 }, -- Battle for Azeroth
-		[60] = { 158, 233 }, -- Shadowlands
-	}
-
 	local maxLevelColors = {}
 	do
 		local t = maxLevelColors
@@ -403,7 +482,8 @@ do
 			-- Use the item level range for that level
 			local minLevel, maxLevel = unpack(maxLevelRanges[playerLevel])
 			if level < minLevel then
-				return GetItemQualityColor(0)
+				local r, g, b = GetItemQualityColor(0)
+				return r, g, b
 			else
 				return colorGradient(level - minLevel, maxLevel - minLevel, unpack(maxLevelColors))
 			end
@@ -425,15 +505,6 @@ do
 		else
 			-- Would this happen ?
 			return 1, 1, 1
-		end
-	end
-	-- Color scheme for quality colors
-	do
-		colorSchemes.qualityColor = function(level, quality)
-			r, g, b, hex = GetItemQualityColor(quality)
-			return r,g,b
-
-
 		end
 	end
 end

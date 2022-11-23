@@ -1,6 +1,6 @@
 --[[
 AdiBags - Adirelle's bag addon.
-Copyright 2010-2014 Adirelle (adirelle@gmail.com)
+Copyright 2010-2021 Adirelle (adirelle@gmail.com)
 All rights reserved.
 
 This file is part of AdiBags.
@@ -25,7 +25,7 @@ local L = addon.L
 --<GLOBALS
 local _G = _G
 local GameTooltip = _G.GameTooltip
-local UseContainerItem = _G.UseContainerItem
+local UseContainerItem = C_Container and C_Container.UseContainerItem or UseContainerItem
 --GLOBALS>
 
 local mod = addon:NewModule('BankSwitcher', 'ABEvent-1.0')
