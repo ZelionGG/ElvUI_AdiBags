@@ -103,7 +103,7 @@ function buttonProto:OnCreate()
 	end
 	self:ClearNormalTexture()
 	if not self.QuestIcon then
-		local questIcon = self:CreateFontString(nil, "OVERLAY")
+		local questIcon = self:CreateFontString(nil, "OVERLAY", "GameFontHighlightOutline22")
 		questIcon:SetPoint("LEFT", 3, 0)
 		if ElvUI then
 			questIcon:SetFont(ElvUI[1].media.normFont, 30, "OUTLINE")
