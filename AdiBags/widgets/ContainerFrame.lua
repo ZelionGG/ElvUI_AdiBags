@@ -26,6 +26,7 @@ local L = addon.L
 local _G = _G
 local assert = _G.assert
 local BACKPACK_CONTAINER = _G.BACKPACK_CONTAINER
+local REAGENTBAG_CONTAINER = ( Enum.BagIndex and Enum.BagIndex.REAGENTBAG_CONTAINER ) or 5
 local band = _G.bit.band
 local BANK_CONTAINER = _G.BANK_CONTAINER
 local ceil = _G.ceil
@@ -45,6 +46,8 @@ local max = _G.max
 local min = _G.min
 local next = _G.next
 local NUM_BAG_SLOTS = _G.NUM_BAG_SLOTS
+local NUM_REAGENTBAG_SLOTS = _G.NUM_REAGENTBAG_SLOTS
+local NUM_TOTAL_EQUIPPED_BAG_SLOTS = _G.NUM_TOTAL_EQUIPPED_BAG_SLOTS
 local pairs = _G.pairs
 local PlaySound = _G.PlaySound
 local select = _G.select
@@ -713,6 +716,9 @@ function containerProto:UpdateContent(bag)
 	local content = self.content[bag]
 	local newSize = self:GetBagIds()[bag] and GetContainerNumSlots(bag) or 0
 	local _, bagFamily = GetContainerNumFreeSlots(bag)
+	if bag == REAGENTBAG_CONTAINER then
+		bagFamily = 2048
+	end
 	content.family = bagFamily
 	for slot = 1, newSize do
 		local itemId = GetContainerItemID(bag, slot)
@@ -845,6 +851,12 @@ local function FilterByBag(slotData)
 		name = REAGENT_BANK
 	elseif bag <= NUM_BAG_SLOTS then
 		name = format(L["Bag #%d"], bag)
+	elseif addon.isRetail then
+		if bag == REAGENTBAG_CONTAINER then
+			name = format(L["Reagent Bag"])
+		else
+			name = format(L["Bank bag #%d"], bag - NUM_BAG_SLOTS)
+		end
 	else
 		name = format(L["Bank bag #%d"], bag - NUM_BAG_SLOTS)
 	end
@@ -858,6 +870,9 @@ end
 
 local MISCELLANEOUS = GetItemClassInfo(Enum.ItemClass.Miscellaneous)
 local FREE_SPACE = L["Free space"]
+-- TODO(lobato): Label the Reagent freespace.
+local FREE_SPACE_REAGENT = L["Reagent Free space"]
+
 function containerProto:FilterSlot(slotData)
 	if self.BagSlotPanel:IsShown() then
 		return FilterByBag(slotData)

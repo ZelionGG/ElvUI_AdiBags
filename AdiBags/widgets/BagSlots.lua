@@ -25,6 +25,7 @@ local L = addon.L
 --<GLOBALS
 local _G = _G
 local BACKPACK_CONTAINER = _G.BACKPACK_CONTAINER
+local REAGENTBAG_CONTAINER = ( Enum.BagIndex and Enum.BagIndex.REAGENTBAG_CONTAINER ) or 5
 local band = _G.bit.band
 local BankFrame = _G.BankFrame
 local BANK_BAG = _G.BANK_BAG
@@ -50,7 +51,8 @@ local GetNumBankSlots = _G.GetNumBankSlots
 local ipairs = _G.ipairs
 local IsInventoryItemLocked = _G.IsInventoryItemLocked
 local next = _G.next
-local NUM_BAG_SLOTS = _G.NUM_BAG_SLOTS
+local NUM_REAGENTBAG_SLOTS = _G.NUM_REAGENTBAG_SLOTS
+local NUM_TOTAL_EQUIPPED_BAG_SLOTS = _G.NUM_TOTAL_EQUIPPED_BAG_SLOTS
 local NUM_BANKGENERIC_SLOTS = _G.NUM_BANKGENERIC_SLOTS
 local pairs = _G.pairs
 local pcall = _G.pcall
@@ -362,7 +364,12 @@ end
 
 function bankButtonProto:UpdateStatus()
 	local numSlots = GetNumBankSlots()
-	local bankSlot = self.bag - NUM_BAG_SLOTS
+	local bankSlot
+	if addon.isRetail then
+		bankSlot = self.bag - NUM_TOTAL_EQUIPPED_BAG_SLOTS
+	else 
+		bankSlot = self.bag - NUM_BAG_SLOTS
+	end
 	self.toPurchase = nil
 	if bankSlot <= numSlots then
 		SetItemButtonTextureVertexColor(self, 1, 1, 1)
@@ -477,7 +484,7 @@ function addon:CreateBagSlotPanel(container, name, bags, isBank)
 	local x = BAG_INSET
 	local height = 0
 	for i, bag in ipairs(bags) do
-		if bag ~= BACKPACK_CONTAINER and bag ~= BANK_CONTAINER and bag ~= REAGENTBANK_CONTAINER then
+		if bag ~= BACKPACK_CONTAINER and bag ~= BANK_CONTAINER and bag ~= REAGENTBANK_CONTAINER and bag ~= bag ~= REAGENTBAG_CONTAINER then
 			local button = buttonClass:Create(bag)
 			button:SetParent(self)
 			button:SetPoint("TOPLEFT", x, -TOP_PADDING)
@@ -495,6 +502,20 @@ function addon:CreateBagSlotPanel(container, name, bags, isBank)
 				button:CreateIconShadow()
 			end
 			x = x + ITEM_SIZE + ITEM_SPACING
+			tinsert(self.buttons, button)
+		elseif bag == REAGENTBAG_CONTAINER then
+			local titleReagent = self:CreateFontString(nil, "OVERLAY")
+			self.TitleReagent = titleReagent
+			titleReagent:SetFontObject(addon.bagFont)
+			titleReagent:SetText(L["Reagent"])
+			titleReagent:SetJustifyH("RIGHT")
+			titleReagent:SetPoint("TOPRIGHT", -BAG_INSET, -BAG_INSET)
+
+			local button = buttonClass:Create(bag)
+			button:SetParent(self)
+			button:SetPoint("TOPLEFT", x + ITEM_SIZE, -TOP_PADDING)
+			button:Show()
+			x = x + ITEM_SIZE + ITEM_SPACING + ITEM_SIZE
 			tinsert(self.buttons, button)
 		end
 	end

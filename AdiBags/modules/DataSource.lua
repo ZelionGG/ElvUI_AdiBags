@@ -29,6 +29,7 @@ local GetContainerNumFreeSlots = C_Container and C_Container.GetContainerNumFree
 local GetContainerNumSlots = C_Container and C_Container.GetContainerNumSlots or GetContainerNumSlots
 local ipairs = _G.ipairs
 local pairs = _G.pairs
+local REAGENTBAG_CONTAINER = ( Enum.BagIndex and Enum.BagIndex.REAGENTBAG_CONTAINER ) or 5
 local strjoin = _G.strjoin
 local tconcat = _G.table.concat
 local tinsert = _G.tinsert
@@ -101,6 +102,7 @@ local FAMILY_ORDER = {
 	0x00100, -- Keyring
 	0x00200, -- Gem Bag
 	0x00400, -- Mining Bag
+	0x00800, -- Reagent Bag
 	0x08000, -- Tackle Box
 	0x10000, -- Refrigerator
 }

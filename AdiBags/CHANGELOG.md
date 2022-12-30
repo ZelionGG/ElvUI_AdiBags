@@ -1,6 +1,7 @@
 # AdiBags
 
-## [v1.9.48](https://github.com/AdiAddons/AdiBags/tree/v1.9.48) (2022-11-22)
-[Full Changelog](https://github.com/AdiAddons/AdiBags/compare/v1.9.47...v1.9.48) [Previous Releases](https://github.com/AdiAddons/AdiBags/releases)
+## [v1.10](https://github.com/ZelionGG/ElvUI_AdiBags/tree/v1.10) (2022-12-30)
 
-- Reagent bag and bank bag fixes. (#806)  
+[Full Changelog](https://github.com/ZelionGG/ElvUI_AdiBags/compare/v1.9.48...v1.10) [Previous Releases](https://github.com/ZelionGG/ElvUI_AdiBags/releases)
+
+- Reagent bag added.

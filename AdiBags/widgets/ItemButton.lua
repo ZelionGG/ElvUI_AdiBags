@@ -39,6 +39,7 @@ local IsInventoryItemLocked = _G.IsInventoryItemLocked
 local SplitContainerItem = C_Container and C_Container.SplitContainerItem or SplitContainerItem
 local ITEM_QUALITY_COMMON
 local ITEM_QUALITY_POOR
+local REAGENTBAG_CONTAINER = ( Enum.BagIndex and Enum.BagIndex.REAGENTBAG_CONTAINER ) or 5
 
 if addon.isRetail then
 	ITEM_QUALITY_COMMON = _G.Enum.ItemQuality.Common
@@ -325,7 +326,14 @@ function buttonProto:FullUpdate()
 	self.itemLink = GetContainerItemLink(bag, slot)
 	self.hasItem = not not self.itemId
 	self.texture = addon:GetContainerItemTexture(bag, slot)
-	self.bagFamily = select(2, GetContainerNumFreeSlots(bag))
+
+	-- TODO(lobato): Test if this is still needed
+	if self.bag == REAGENTBAG_CONTAINER then
+		self.bagFamily = 2048
+	else
+		self.bagFamily = select(2, GetContainerNumFreeSlots(bag))
+	end
+
 	self:Update()
 end
 
