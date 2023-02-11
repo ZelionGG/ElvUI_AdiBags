@@ -133,6 +133,11 @@ function buttonProto:OnAcquire(container, bag, slot)
 	self:FullUpdate()
 end
 
+function buttonProto:UpdateOverlay()
+	local _, _, _, quality = GetContainerItemInfo(self.bag, self.slot)
+	SetItemButtonOverlay(self, self.itemId or self.itemLink or 0, quality)
+end
+
 function buttonProto:OnRelease()
 	self:SetSection(nil)
 	self.container = nil
@@ -376,6 +381,7 @@ function buttonProto:Update()
 	self:UpdateKlixStyling()
 	if addon.isRetail then
 		self:UpdateUpgradeIcon()
+		self:UpdateOverlay()
 	end
 	if self.UpdateSearch then
 		self:UpdateSearch()
