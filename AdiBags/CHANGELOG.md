@@ -1,7 +1,7 @@
 # AdiBags
 
-## [v1.10](https://github.com/ZelionGG/ElvUI_AdiBags/tree/v1.10) (2022-12-30)
+## [v1.11](https://github.com/ZelionGG/ElvUI_AdiBags/tree/v1.11) (2023-02-11)
 
-[Full Changelog](https://github.com/ZelionGG/ElvUI_AdiBags/compare/v1.9.48...v1.10) [Previous Releases](https://github.com/ZelionGG/ElvUI_AdiBags/releases)
+[Full Changelog](https://github.com/ZelionGG/ElvUI_AdiBags/compare/v1.10...v1.11) [Previous Releases](https://github.com/ZelionGG/ElvUI_AdiBags/releases)
 
-- Reagent bag added.
+- Added progession quality icons on items.
